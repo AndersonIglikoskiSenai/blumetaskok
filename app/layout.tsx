@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/sonner"; // Toaster aqui
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Task Manager App', // Título raiz
+  title: 'BlumeTask', // Título raiz
   description: 'Gerencie suas tarefas eficientemente.',
 };
 

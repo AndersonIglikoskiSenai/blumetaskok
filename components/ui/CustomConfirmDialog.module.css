@@ -1,0 +1,79 @@
+.confirmDialogOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* Overlay escurecido */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050; /* Certifique-se de que está acima de outros elementos */
+    padding: 15px; /* Espaçamento para telas menores */
+  }
+  
+  .confirmDialogContent {
+    background-color: #FFF3E0; /* <<< SEU FUNDO LARANJA CLARO AQUI - Ajuste conforme necessário */
+    /* Exemplo de um laranja mais vibrante: background-color: #FFA726; */
+    /* Exemplo de um laranja mais suave: background-color: #FFE0B2; */
+    color: #333; /* Cor do texto para bom contraste com laranja claro */
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+    min-width: 320px;
+    max-width: 450px;
+    text-align: center;
+    border: 1px solid #FFCC80; /* Borda sutil laranja (opcional) */
+  }
+  
+  .confirmDialogContent h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.6em; /* Aumentado um pouco */
+    color: #D9534F; /* Cor mais escura para o título, talvez um tom de laranja escuro ou vermelho */
+    font-weight: 600;
+  }
+  
+  .confirmDialogContent p {
+    margin-bottom: 25px;
+    font-size: 1.1em; /* Aumentado um pouco */
+    line-height: 1.6;
+    color: #444; /* Cor do texto da mensagem */
+  }
+  
+  .confirmDialogActions {
+    display: flex;
+    justify-content: space-between; /* Ou center, space-between */
+    gap: 12px; /* Espaço entre os botões */
+  }
+  
+  .confirmDialogActions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  /* Botão de confirmação (Excluir) */
+  .confirmButton {
+    background-color: #D9534F; /* Vermelho para perigo */
+    color: white;
+  }
+  .confirmButton:hover {
+    background-color: #C9302C;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  
+  /* Botão de cancelar */
+  .cancelButton {
+    background-color: #f0f0f0; /* Cinza claro */
+    color: #555;
+    border: 1px solid #ddd;
+  }
+  .cancelButton:hover {
+    background-color: #e0e0e0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
