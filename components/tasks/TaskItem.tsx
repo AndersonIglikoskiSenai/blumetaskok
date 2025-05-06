@@ -1,294 +1,271 @@
-"use client"; // Needs client-side interaction
+"use client";
 
 import React, { useState, useMemo } from 'react';
 import { Task, Activity } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { updateTask, deleteTask } from '@/lib/firestore';
+import { db } from '@/firebase/config';
+import { doc, collection } from 'firebase/firestore';
+// CORRIGIDO O CAMINHO DOS IMPORTS UI <<<========================= CORREÇÃO
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Trash2, Edit, ChevronDown, ChevronUp, Plus } from 'lucide-react';
-import { updateTask, deleteTask, updateActivityInTask, deleteActivityFromTask, addActivityToTask } from '@/lib/firestore';
+import { Input } from "@/components/ui/input"; // Corrigido
+import { Separator } from "@/components/ui/separator"; // Corrigido
 import { toast } from "sonner";
-import { Input } from '../ui/input'; // Assuming Input is correctly imported
-import { Separator } from '../ui/separator';
+import { Trash2, Edit, ChevronDown, ChevronUp, Plus, Loader2 } from 'lucide-react';
 
-
+// O restante do componente TaskItem permanece igual ao que te enviei antes...
+// (Cole o restante do código do TaskItem aqui)
 interface TaskItemProps {
     task: Task;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
+    // === MANTENHA TODO O SEU ESTADO E LÓGICA ===
     const [isExpanded, setIsExpanded] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [newTitle, setNewTitle] = useState(task.title);
     const [newActivityName, setNewActivityName] = useState('');
     const [loadingDelete, setLoadingDelete] = useState(false);
-    const [loadingUpdate, setLoadingUpdate] = useState(false); // General update loading
-    const [loadingActivity, setLoadingActivity] = useState(false); // For add/update/delete activity
+    const [loadingUpdate, setLoadingUpdate] = useState(false);
+    const [loadingActivity, setLoadingActivity] = useState(false);
 
-
-    // Memoize calculation of progress
     const progress = useMemo(() => {
         if (!task.activities || task.activities.length === 0) return 0;
         const completedCount = task.activities.filter(act => act.completed).length;
         return Math.round((completedCount / task.activities.length) * 100);
     }, [task.activities]);
 
-    // --- Handlers ---
-
+    // --- Handlers (Mantidos como no seu original) ---
     const handleToggleComplete = async (checked: boolean) => {
         setLoadingUpdate(true);
         const success = await updateTask(task.id, { completed: checked });
-        if (!success) toast.error("Failed to update task status.");
-        // No success toast needed, UI change is indication
+        if (!success) toast.error("Falha ao atualizar status da tarefa.");
         setLoadingUpdate(false);
     };
 
-     const handleDelete = async () => {
-        if (window.confirm(`Are you sure you want to delete task "${task.title}"?`)) {
+    const handleDelete = async () => {
+        if (window.confirm(`Tem certeza que deseja excluir a tarefa "${task.title}"?`)) {
             setLoadingDelete(true);
             const success = await deleteTask(task.id);
             if (success) {
-                toast.success("Task deleted.");
-                // The task will disappear due to the real-time subscription
+                toast.success("Tarefa excluída.");
             } else {
-                toast.error("Failed to delete task.");
+                toast.error("Falha ao excluir tarefa.");
             }
-            setLoadingDelete(false); // Still set loading false on error
+            setLoadingDelete(false);
         }
     };
 
-     const handleTitleUpdate = async (e?: React.FormEvent) => {
-        e?.preventDefault(); // Prevent form submission if used in a form
+    const handleTitleUpdate = async (e?: React.FormEvent) => {
+        e?.preventDefault();
         if (!newTitle.trim() || newTitle === task.title) {
             setIsEditingTitle(false);
-            setNewTitle(task.title); // Reset if invalid or unchanged
+            setNewTitle(task.title);
             return;
         }
         setLoadingUpdate(true);
         const success = await updateTask(task.id, { title: newTitle.trim() });
-         if (success) {
-             toast.success("Task title updated.");
-             setIsEditingTitle(false);
-         } else {
-             toast.error("Failed to update title.");
-             setNewTitle(task.title); // Reset on error
-         }
+        if (success) {
+            toast.success("Título da tarefa atualizado.");
+            setIsEditingTitle(false);
+        } else {
+            toast.error("Falha ao atualizar título.");
+            setNewTitle(task.title); // Reverte em caso de erro
+        }
         setLoadingUpdate(false);
     };
 
     const handleAddActivity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newActivityName.trim()) return;
-
         setLoadingActivity(true);
         const newActivity: Activity = {
-            id: doc(collection(db, '_')).id, // Firestore offline ID generation
+            id: doc(collection(db, '_')).id, // Sua geração de ID
             name: newActivityName.trim(),
             completed: false,
         };
         const updatedActivities = [...(task.activities || []), newActivity];
         const success = await updateTask(task.id, { activities: updatedActivities });
-
         if (success) {
-            toast.success("Activity added.");
-            setNewActivityName(''); // Clear input
-            if (!isExpanded) setIsExpanded(true); // Expand if adding first activity
+            toast.success("Atividade adicionada.");
+            setNewActivityName('');
+            if (!isExpanded) setIsExpanded(true);
         } else {
-            toast.error("Failed to add activity.");
+            toast.error("Falha ao adicionar atividade.");
         }
         setLoadingActivity(false);
     };
 
     const handleToggleActivity = async (activityId: string, completed: boolean) => {
-         setLoadingActivity(true);
-         const updatedActivities = (task.activities || []).map(act =>
-             act.id === activityId ? { ...act, completed } : act
-         );
-         const success = await updateTask(task.id, { activities: updatedActivities });
-         if (!success) toast.error("Failed to update activity status.");
-         setLoadingActivity(false);
+        setLoadingActivity(true);
+        const updatedActivities = (task.activities || []).map(act =>
+            act.id === activityId ? { ...act, completed } : act
+        );
+        const success = await updateTask(task.id, { activities: updatedActivities });
+        if (!success) toast.error("Falha ao atualizar status da atividade.");
+        setLoadingActivity(false);
     };
 
-     const handleDeleteActivity = async (activityId: string) => {
-        if (!window.confirm("Are you sure you want to delete this activity?")) return;
-
+    const handleDeleteActivity = async (activityId: string) => {
+        if (!window.confirm("Tem certeza que deseja excluir esta atividade?")) return;
         setLoadingActivity(true);
         const updatedActivities = (task.activities || []).filter(act => act.id !== activityId);
         const success = await updateTask(task.id, { activities: updatedActivities });
         if (success) {
-            toast.success("Activity deleted.");
+            toast.success("Atividade excluída.");
         } else {
-            toast.error("Failed to delete activity.");
+            toast.error("Falha ao excluir atividade.");
         }
         setLoadingActivity(false);
     };
+    // === FIM DA LÓGICA MANTIDA ===
 
 
+    // --- JSX (Aplicando Estilos do App.tsx) ---
     return (
-        <Card className={`transition-all duration-300 ${task.completed ? 'bg-gray-100 dark:bg-gray-800 opacity-70' : 'bg-white dark:bg-gray-850'}`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3 px-4">
-                <div className="flex items-center space-x-3 flex-grow min-w-0">
-                     {/* Disable checkbox interaction while updating */}
-                    <Checkbox
-                        id={`task-${task.id}`}
-                        checked={task.completed}
-                        onCheckedChange={handleToggleComplete}
-                        aria-label={`Mark task ${task.title} as ${task.completed ? 'incomplete' : 'complete'}`}
-                        disabled={loadingUpdate || loadingDelete || loadingActivity}
-                    />
+        // Container principal do item (div em vez de Card) com estilos App.tsx
+        <div
+            className={`bg-white rounded-xl shadow-sm border border-gray-200 transition-all duration-300 ${
+                task.completed ? 'opacity-70' : '' // Opacidade para tarefas concluídas
+            }`}
+        >
+            {/* Header do Item (Checkbox, Título, Botões) */}
+            <div className="flex items-center gap-4 p-4"> {/* Gap e Padding */}
+                {/* Checkbox Principal */}
+                <Checkbox
+                    id={`task-${task.id}`}
+                    checked={task.completed}
+                    onCheckedChange={handleToggleComplete}
+                    className="h-5 w-5 rounded-md border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white focus:ring-indigo-500 transition-colors duration-200 flex-shrink-0"
+                    aria-label={`Marcar tarefa ${task.title} como ${task.completed ? 'incompleta' : 'completa'}`}
+                    disabled={loadingUpdate || loadingDelete || loadingActivity}
+                />
+                {/* Título (Editável ou Display) */}
+                <div className="flex-grow min-w-0">
                     {isEditingTitle ? (
-                         <form onSubmit={handleTitleUpdate} className="flex-grow">
+                        <form onSubmit={handleTitleUpdate} className="flex-grow">
                             <Input
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
-                                onBlur={() => handleTitleUpdate()} // Save on blur
+                                onBlur={handleTitleUpdate} // Salva ao perder foco
                                 autoFocus
-                                className={`h-8 text-sm ${task.completed ? 'line-through' : ''}`}
+                                // Estilo sutil para edição in-loco
+                                className={`h-8 text-sm p-1 border-b border-gray-300 focus:border-indigo-500 outline-none ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}
                                 disabled={loadingUpdate}
                             />
                         </form>
                     ) : (
-                       <label
-                          htmlFor={`task-${task.id}`}
-                          className={`text-sm font-medium leading-none truncate cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${task.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}
-                          onClick={() => setIsEditingTitle(true)} // Click label to edit
-                          title={task.title} // Show full title on hover if truncated
+                        <label
+                            htmlFor={`task-${task.id}`} // Associar ao checkbox
+                            className={`block text-sm font-medium cursor-pointer ${
+                                task.completed
+                                    ? 'line-through text-gray-500' // Cor concluída
+                                    : 'text-gray-800' // Cor pendente
+                            }`}
+                            // Permitir clique para editar (poderia desabilitar se task.completed)
+                            onClick={() => setIsEditingTitle(true)}
+                            title={task.title} // Tooltip para títulos longos
                         >
-                          {task.title}
+                            {task.title}
                         </label>
                     )}
+                     {/* Data de criação (Opcional, como em App.tsx) */}
+                     {task.createdAt && (
+                         <p className="text-xs text-gray-500 mt-1">
+                            Adicionada em {new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                .format(task.createdAt instanceof Date ? task.createdAt : task.createdAt.toDate()) /* Necessário .toDate() para Timestamp */}
+                        </p>
+                      )}
                 </div>
-                 <div className="flex items-center space-x-1">
-                     {!isEditingTitle && (
-                         <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setIsEditingTitle(true)}
-                            disabled={loadingUpdate || loadingDelete || loadingActivity}
-                            aria-label="Edit task title"
-                         >
+                {/* Botões de Ação */}
+                <div className="flex items-center flex-shrink-0 space-x-1 ml-2">
+                    {!isEditingTitle && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-indigo-600 hover:bg-gray-100" onClick={() => setIsEditingTitle(true)} disabled={loadingUpdate || loadingDelete || loadingActivity} aria-label="Editar título">
                             <Edit className="h-4 w-4" />
                         </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-100" onClick={handleDelete} disabled={loadingDelete || loadingUpdate || loadingActivity} aria-label="Excluir tarefa">
+                        {loadingDelete ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    </Button>
+                    {/* Renderiza botão de expandir apenas se houver atividades ou for desejado */}
+                    {(task.activities && task.activities.length > 0 || !isExpanded) && ( // Ajuste a condição se quiser sempre mostrar
+                         <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600 hover:bg-gray-100" onClick={() => setIsExpanded(!isExpanded)} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"}>
+                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                         </Button>
                      )}
-                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-red-500 hover:text-red-600"
-                        onClick={handleDelete}
-                        disabled={loadingDelete || loadingUpdate || loadingActivity}
-                        aria-label="Delete task"
-                     >
-                         {loadingDelete ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                     </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                         aria-label={isExpanded ? "Collapse details" : "Expand details"}
-                     >
-                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                     </Button>
-                 </div>
-            </CardHeader>
+                </div>
+            </div>
 
-            {/* Expandable Content */}
+            {/* Conteúdo Expansível (Atividades) */}
             {isExpanded && (
                 <>
-                 <Separator className="my-0" />
-                <CardContent className="pt-3 pb-2 px-4 text-sm space-y-3">
-                    {/* Progress Bar */}
-                     {task.activities && task.activities.length > 0 && (
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                                <span>Progress</span>
-                                <span>{progress}%</span>
+                    <Separator />
+                    <div className="px-4 pt-3 pb-4 text-sm space-y-3"> {/* Padding interno */}
+                        {/* Barra de Progresso (Mantida) */}
+                        {task.activities && task.activities.length > 0 && (
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-gray-500">
+                                    <span>Progresso</span>
+                                    <span>{progress}%</span>
+                                </div>
+                                <Progress value={progress} className="h-1.5" aria-label={`${progress}% de conclusão da tarefa`} />
                             </div>
-                            <Progress value={progress} aria-label={`${progress}% task completion`} />
+                        )}
+
+                        {/* Lista de Atividades (Mantida com ajustes de estilo) */}
+                        <div className="space-y-2">
+                            <h4 className="font-medium text-xs text-gray-600">Atividades:</h4>
+                            {(task.activities && task.activities.length > 0) ? (
+                                <ul className="space-y-1 pl-1"> {/* Reduzido pl */}
+                                    {task.activities.map(activity => (
+                                        <li key={activity.id} className="flex items-center justify-between group -ml-1"> {/* Negativo ml para alinhar checkbox */}
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={`activity-${activity.id}`}
+                                                    checked={activity.completed}
+                                                    onCheckedChange={(checked) => handleToggleActivity(activity.id, !!checked)}
+                                                    disabled={loadingActivity || loadingDelete}
+                                                    className="h-4 w-4 rounded border-gray-300 data-[state=checked]:bg-indigo-500 data-[state=checked]:text-white focus:ring-indigo-400"
+                                                    aria-label={`Marcar atividade ${activity.name} como ${activity.completed ? 'incompleta' : 'completa'}`}
+                                                />
+                                                <label htmlFor={`activity-${activity.id}`} className={`text-xs ${activity.completed ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                                                    {activity.name}
+                                                </label>
+                                            </div>
+                                            <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100" onClick={() => handleDeleteActivity(activity.id)} disabled={loadingActivity || loadingDelete} aria-label="Excluir atividade">
+                                                {/* Spinner sutil no delete da atividade */}
+                                                {loadingActivity ? <Loader2 className="h-3 w-3 animate-spin"/> : <Trash2 className="h-3 w-3"/>}
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-xs text-gray-500 italic pl-1">Nenhuma atividade adicionada.</p>
+                            )}
                         </div>
-                    )}
 
-                     {/* Activities List */}
-                    <div className="space-y-2">
-                         <h4 className="font-medium text-xs text-gray-600 dark:text-gray-300">Activities:</h4>
-                         {(task.activities && task.activities.length > 0) ? (
-                            <ul className="space-y-1 pl-2">
-                                {task.activities.map(activity => (
-                                    <li key={activity.id} className="flex items-center justify-between group">
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox
-                                                id={`activity-${activity.id}`}
-                                                checked={activity.completed}
-                                                onCheckedChange={(checked) => handleToggleActivity(activity.id, !!checked)} // Ensure boolean
-                                                 disabled={loadingActivity || loadingDelete}
-                                                 aria-label={`Mark activity ${activity.name} as ${activity.completed ? 'incomplete' : 'complete'}`}
-                                             />
-                                             <label
-                                                htmlFor={`activity-${activity.id}`}
-                                                 className={`text-xs ${activity.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}
-                                             >
-                                                 {activity.name}
-                                            </label>
-                                        </div>
-                                         <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-5 w-5 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() => handleDeleteActivity(activity.id)}
-                                             disabled={loadingActivity || loadingDelete}
-                                             aria-label="Delete activity"
-                                         >
-                                              {loadingActivity ? <Loader2 className="h-3 w-3 animate-spin"/> : <Trash2 className="h-3 w-3"/>}
-                                         </Button>
-                                    </li>
-                                ))}
-                            </ul>
-                         ) : (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 italic pl-2">No activities added yet.</p>
-                         )}
-                     </div>
-
-                     {/* Add Activity Form */}
-                     <form onSubmit={handleAddActivity} className="flex gap-1 items-center pt-2">
-                        <Input
-                            type="text"
-                            placeholder="Add new activity..."
-                            value={newActivityName}
-                            onChange={(e) => setNewActivityName(e.target.value)}
-                            className="flex-grow h-7 text-xs"
-                            disabled={loadingActivity || loadingDelete}
-                             aria-label="New activity name"
-                         />
-                         <Button
-                            type="submit"
-                            size="sm"
-                            variant="outline"
-                             className="h-7 px-2"
-                            disabled={loadingActivity || loadingDelete}
-                         >
-                             <Plus className="h-3 w-3 mr-1" />
-                            {loadingActivity ? 'Adding...' : 'Add'}
-                         </Button>
-                    </form>
-                </CardContent>
-                 {/* Optional Footer Content if needed */}
-                {/* <Separator className="my-0" />
-                <CardFooter className="text-xs text-gray-500 dark:text-gray-400 px-4 py-2">
-                    Created: {task.createdAt ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
-                </CardFooter> */}
-                 </>
+                        <form onSubmit={handleAddActivity} className="flex gap-1 items-center pt-2">
+                            <Input
+                                type="text"
+                                placeholder="Adicionar nova atividade..."
+                                value={newActivityName}
+                                onChange={(e) => setNewActivityName(e.target.value)}
+                                // Estilo sutil para input de atividade
+                                className="flex-grow h-7 text-xs px-2 rounded border-gray-200 bg-gray-50 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                disabled={loadingActivity || loadingDelete}
+                                aria-label="Nome da nova atividade"
+                            />
+                            <Button type="submit" size="sm" variant="outline" className="h-7 px-2 border-gray-300 text-gray-600 hover:bg-gray-100" disabled={loadingActivity || loadingDelete}>
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add
+                            </Button>
+                        </form>
+                    </div>
+                </>
             )}
-        </Card>
+        </div>
     );
 };
-
-
-// You might need the Loader2 icon if not already imported
-import { Loader2 } from 'lucide-react';
-// You might need Firestore functions if not already imported
-import { doc, collection } from 'firebase/firestore';
-import { db } from '@/firebase/config';
 
 export default TaskItem;

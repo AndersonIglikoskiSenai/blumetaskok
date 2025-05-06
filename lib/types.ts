@@ -1,23 +1,23 @@
 import { Timestamp } from 'firebase/firestore';
 
-// Definição para Tarefas e Atividades (já deve estar aqui)
+// Definição para Atividades
 export interface Activity {
-  id: string;
+  id: string; // ID único para a atividade
   name: string;
   completed: boolean;
 }
 
+// Definição para Tarefas
 export interface Task {
-  id: string;
+  id: string; // ID do documento no Firestore
   title: string;
-  userId: string;
-  createdAt: Timestamp;
+  userId: string; // ID do usuário que criou a tarefa
+  createdAt: Timestamp | Date; // Timestamp do Firestore ou objeto Date após conversão
   completed: boolean;
-  activities: Activity[];
+  activities: Activity[]; // Array de sub-atividades
 }
 
-// --- ADICIONE OU VERIFIQUE ESTA PARTE ---
-// Definição para Credenciais de Autenticação
+// Definição para Credenciais de Autenticação (se usar em algum lugar)
 export interface AuthCredentials {
     email: string;
     password: string;

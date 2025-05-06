@@ -1,15 +1,14 @@
-// app/layout.tsx (Atualizado)
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
-import { Toaster } from "@/components/ui/sonner"; // <<< Atualizado aqui
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import '@/app/globals.css'; // Import global CSS aqui
+import { AuthProvider } from '@/context/AuthContext'; // Provider aqui
+import { Toaster } from "@/components/ui/sonner"; // Toaster aqui
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Task Manager Platform",
-  description: "Manage your daily tasks efficiently.",
+  title: 'Task Manager App', // Título raiz
+  description: 'Gerencie suas tarefas eficientemente.',
 };
 
 export default function RootLayout({
@@ -18,10 +17,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    // Defina idioma e tags raiz aqui
+    <html lang="pt-BR">
+      {/* Aplique fontes e classes globais aqui */}
+      <body className={`${inter.className} antialiased`}>
+        {/* Envolva com providers globais aqui */}
         <AuthProvider>
-           <Toaster richColors position="top-center" /> {/* <<< Atualizado aqui (richColors é opcional) */}
+           {/* Renderize Toaster global aqui */}
+           <Toaster richColors position="top-center" />
+           {/* Renderize os filhos (que podem ser layouts aninhados ou páginas) */}
            {children}
         </AuthProvider>
       </body>
