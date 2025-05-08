@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation'; // Importa o roteador
 import { Task } from '@/lib/types';
 import { subscribeToTasks } from '@/lib/firestore';
 import AddTaskForm from '@/components/tasks/AddTaskForm';
@@ -13,12 +14,20 @@ import { FirestoreError } from 'firebase/firestore';
 import { Menu } from 'lucide-react';
 
 export default function DashboardPage() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth(); // Adiciona `loading` para verificar o estado de carregamento
+    const router = useRouter(); // Hook para redirecionamento
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loadingTasks, setLoadingTasks] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed'>('all');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+    // Redireciona para /login se o usuário não estiver autenticado
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login'); // Redireciona para a página de login
+        }
+    }, [user, loading, router]);
 
     const displayName = useMemo(() => {
         if (user?.displayName) return user.displayName;

@@ -8,7 +8,6 @@ import {
   updateDoc,
   doc,
   serverTimestamp,
-  Timestamp,
   onSnapshot,
   orderBy,
   FirestoreError // Mantenha a importação para tipar erros recebidos do Firestore
