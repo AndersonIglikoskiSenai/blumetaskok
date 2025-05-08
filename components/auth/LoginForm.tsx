@@ -27,7 +27,7 @@ export function LoginForm() {
           </div>
           
           {/* Formulário */}
-          <form onSubmit={handleSubmit} className="p-6">
+          <form onSubmit={handleSubmit} className="p-5">
             <div className="space-y-5">
               {/* Campo de E-mail */}
               <div className="space-y-2">
