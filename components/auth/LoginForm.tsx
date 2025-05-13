@@ -1,20 +1,43 @@
 "use client";
 
+import { signIn } from 'next-auth/react';
+
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { AtSignIcon, KeyIcon, LogInIcon } from 'lucide-react';
+import { AtSignIcon, KeyIcon, LogInIcon, Github } from 'lucide-react';
+import { useRouter } from 'next/navigation'; // Corrigido aqui
+import {signInWithEmailAndPassword, signInWithPopup, GithubAuthProvider} from 'firebase/auth';
+import { auth } from '@/firebase/config';
+
+
+const githubProvider = new GithubAuthProvider();
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading } = useAuth(); // Get loading state from context
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await login({ email, password });
+  const handleSubmit = async () => {
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    }catch (error: any) {
+    console.error(error.message);
+  }
+};
+
+  const [error, setError] = useState('');
+  const router = useRouter(); // Agora usando o hook correto
+
+  const handleGithubLogin = async () => {
+    try {
+      await signInWithPopup(auth, githubProvider);
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error(error.message);
+    }
   };
 
-  
   return (
     <div className="flex items-center w-full">
       <div className="w-full ">
@@ -25,7 +48,7 @@ export function LoginForm() {
             <h1 className="text-2xl font-bold text-white text-center">Bem vindo</h1>
             <p className="text-white text-center mt-2">Acesse sua conta para continuar</p>
           </div>
-          
+
           {/* Formulário */}
           <form onSubmit={handleSubmit} className="p-5">
             <div className="space-y-5">
@@ -50,7 +73,7 @@ export function LoginForm() {
                   />
                 </div>
               </div>
-              
+
               {/* Campo de Senha */}
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -71,7 +94,7 @@ export function LoginForm() {
                   />
                 </div>
               </div>
-              
+
               {/* Botão de Login */}
               <button
                 type="submit"
@@ -79,6 +102,7 @@ export function LoginForm() {
                 className="w-full flex justify-center items-center space-x-2 py-2 px-4 border border-transparent rounded-md shadow-sm 
                 text-sm font-medium text-white bg-indigo-600"
               >
+
                 {loading ? (
                   <>
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -93,6 +117,15 @@ export function LoginForm() {
                     <span>Entrar</span>
                   </>
                 )}
+              </button>
+              <button
+                onClick={handleGithubLogin}
+                className="flex items-center justify-center
+                        bg-gray-800 text-white p-2 rounded hover:bg-gray-700 transition
+                        duration-200"
+              >
+                <Github className="h-5 w-5 mr-2" />
+                Login com GitHub
               </button>
             </div>
           </form>
